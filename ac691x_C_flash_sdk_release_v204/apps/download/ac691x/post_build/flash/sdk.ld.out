@@ -1,0 +1,206 @@
+
+MEMORY
+{
+    reserved_ram(rw): ORIGIN = 0x0100, LENGTH = 0x00100
+    mask_ram0 : ORIGIN = 0x0000200, LENGTH = 0x200
+    ram0 : ORIGIN = 0x0000400, LENGTH = 47K-0x400-0x100
+    overlay_ram0 : ORIGIN = 47K-0X100, LENGTH = 28K
+ rom_code(x) : ORIGIN = 0x0022800, LENGTH = 128K-10K
+    stack_ram(rw) : ORIGIN = 0x14000-0x100-5K, LENGTH = 5K
+    code0(x) : ORIGIN = 0x1000000, LENGTH = 16M
+}
+
+ENTRY(_start)
+
+
+
+
+
+SECTIONS
+{
+    . = ORIGIN(reserved_ram);
+    .reserved_data ALIGN(4):
+    {
+        . = 4;
+        *(.reserved_info)
+        *(.otp_info)
+    } > reserved_ram
+
+    . = ORIGIN(ram0);
+  .bss (NOLOAD) :SUBALIGN(4)
+  {
+      *(.bss)
+      *(.ram1_bss)
+
+  bredr_base_addr = .;
+      *(.bt_classic_base)
+      *(.bt_sco_codec_data)
+      *(.bt_classic_data)
+      *(.bt_stack)
+
+      *(.dac_buf_sec)
+  } > ram0
+
+  .data :SUBALIGN(4)
+  {
+
+   __begin_of_bank_overlay_0 = .;
+
+       . = ALIGN(4);
+      *(.data*)
+
+      *(.mask_call*)
+    bredr_base_updata_ram1 = .;
+
+    _bredr_nv_mem_begin = .;
+       *(.ram1_data)
+    _bredr_nv_mem_end = .;
+
+    _ble_nv_mem_begin = .;
+       *(.bt_nv_data)
+    _ble_nv_mem_end = .;
+
+   *(.powerdown_text)
+      *(.eq_buf_sec)
+      *(.sd_buf)
+      *(.usb_buf)
+
+   *(.common)
+
+      *memcpy.o(.text .rodata*)
+      *memset.o(.text .rodata*)
+      *icache_hw.o(.text)
+    _system_cfg_begin = .;
+      *(.system_cfg)
+      _system_cfg_end = .;
+
+   __end_of_bank_overlay_0 = .;
+
+  } > ram0
+
+  RAM_BEGIN_ADDR = ORIGIN(ram0);
+  RAM_END_ADDR = . ;
+  ram_end = . - ORIGIN(ram0);
+
+  OVERLAY : NOCROSSREFS AT(0x100000) SUBALIGN(4)
+  {
+  .overlay1
+   {
+       *(.bt_sbc)
+       *(.bt_sbc_dec)
+       *(.music_sbc_dec)
+   }
+ .overlay2
+   {
+       *(.bt_aec)
+   }
+ .overlay3
+   {
+       *(.bt_updata)
+   }
+ .overlay4
+   {
+       *(.music_mem)
+       *(.fs_fat)
+       *(.fs_syd)
+       *(.music_mp3_dec)
+   }
+
+  } > overlay_ram0
+
+
+  .rom_code_seg (NOLOAD) :
+  {
+
+      INCLUDE "download\ac691x\post_build\libs_stubs.ld";
+  } > rom_code
+
+
+  . = ORIGIN(stack_ram);
+  .stack_data (NOLOAD) :SUBALIGN(4)
+    {
+        STACK_START = .;
+        *(.stack)
+        STACK_END = .;
+    } > stack_ram
+
+  . = ORIGIN(code0) ;
+  .text ALIGN(4):
+  {
+   *startup.o(.text)
+      *(.const_tab)
+
+   *(.ver_magic)
+   *(.version)
+
+      *(.text* .rodata*)
+
+
+   _LOAD_CACHE_START = . ;
+   _VM_CODE_START = . ;
+      *(.vm)
+   _VM_CODE_END = . ;
+   _LOAD_CACHE_END = . ;
+        . = ALIGN(4);
+ lmp_hci_handler_begin = .;
+  *(.lmp_hci_handler)
+ lmp_hci_handler_end = .;
+        a2dp_sink_media_probe_begin = .;
+  *(.a2dp_sink_media_probe)
+ a2dp_sink_media_probe_end = .;
+ a2dp_sink_media_codec_begin = .;
+  *(.a2dp_sink_media_codec)
+ a2dp_sink_media_codec_end = .;
+ a2dp_source_media_codec_begin = .;
+  *(.a2dp_source_media_codec)
+ a2dp_source_media_codec_end = .;
+ a2dp_event_handler_begin = .;
+  KEEP(*(.a2dp_event_handler))
+ a2dp_event_handler_end = .;
+        clock_switcher_begin = . ;
+        *(.clock_switch.fun)
+        clock_switcher_end = . ;
+        bt_sleep_begin = .;
+          *(.bt_sleep)
+        bt_sleep_end = .;
+       . = (. +3) & ~ 3;
+       _sys_initcall_begin = .;
+       *(.sys.initcall)
+       _sys_initcall_end = .;
+        *(.ble)
+  *(.bredr)
+  *(.bt_power)
+        *(.poweroff_flash)
+        ble_text_begin = . ;
+        *(.ble_irq_text)
+        ble_text_end = . ;
+        bredr_text_begin = . ;
+        *(.bredr_irq_text)
+        bredr_text_end = . ;
+        *(.sys_cfg)
+        poweroff_text_begin = . ;
+        *(.poweroff_text)
+        poweroff_text_end = . ;
+  *(.qlz_init)
+  *(.qlz_sco)
+  *(.qlz_a2dp)
+  *(.qlz_comm)
+  } > code0
+  text_end = . ;
+  .version : {
+   *(.ver_magic_start)
+   *(.version)
+   *(.ver_magic_end)
+  } > code0
+  jump_addr_base = ORIGIN(code0) + LENGTH(code0) - 128;
+  pwr_info_base = ORIGIN(code0) + LENGTH(code0) - 144;
+  low_pwr_base = ORIGIN(code0) + LENGTH(code0) - 224;
+  code_begin_addr = ORIGIN(code0);
+  text_size = SIZEOF(.text);
+  data_addr = ADDR(.data) ;
+  data_begin = text_end ;
+  data_size = SIZEOF(.data) ;
+  bss_begin = 0x200;
+  bss_size = SIZEOF(.bss) + 0x200;
+  decompressed_dict_begin = ORIGIN(code0);
+}
