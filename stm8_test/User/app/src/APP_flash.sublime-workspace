@@ -1,0 +1,401 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"D",
+				"Data"
+			]
+		]
+	},
+	"buffers":
+	[
+		{
+			"contents": "#include \"main.h\"\n\nSN_STRUCT APP_SN_StrPar;\n\nvoid APP_SN_Write(void){\n	u8 SNFlag = SNFLAGDATA;\n	u8 Code = 0;\n	HAL_eeprom_WriteData(SNFLAGADD, &SNFlag, 1);						//写入SN修改标志位\n	Code = ALG_SN_Code(APP_SN_StrPar.SNdata);							//获取SN加密字\n	ALG_SN_Encrypt(APP_SN_StrPar.SNdata, Code);						//对SN设备号加密\n	HAL_eeprom_WriteData(SNSTARTADD, APP_SN_StrPar.SNdata, SNLENG);	//写入SN加密后的数据        \n} \n\nvoid  APP_SN_Init(void){\n	HAL_eeprom_ReadData(SNSTARTADD, APP_SN_StrPar.SNdata, SNLENG);\n	HAL_eeprom_ReadData(SNFLAGADD, &APP_SN_StrPar.SNflag, 1);\n	if(APP_SN_StrPar.SNflag == SNFLAGDATA){//SN号已加密\n		#ifdef DEBUG_USART\n			printf(\"\\r\\n【MCU status】:SN: %02X_%02X_%02X_%02X_%02X\\r\\n\",APP_SN_StrPar.SNdata[0],\n				APP_SN_StrPar.SNdata[1],APP_SN_StrPar.SNdata[2],APP_SN_StrPar.SNdata[3],APP_SN_StrPar.SNdata[4]);\n		#endif\n		if(APP_SN_StrPar.SNdata[0]||APP_SN_StrPar.SNdata[1]||APP_SN_StrPar.SNdata[2]||APP_SN_StrPar.SNdata[3]||APP_SN_StrPar.SNdata[4]){\n			u8 Code = 0;\n			Code = ALG_SN_Code(APP_SN_StrPar.SNdata);\n			if((APP_SN_StrPar.SNdata[3] == EQUIPMENTCHAR2^Code)&&(APP_SN_StrPar.SNdata[4] == EQUIPMENTCHAR1^Code) ){\n				\n			}\n		}\n		else{\n			//while(1);//添加LED闪烁指示，和喂狗过程\n		}\n	}\n	else{\n		if(APP_SN_StrPar.SNdata[4] == EQUIPMENTCHAR1&&APP_SN_StrPar.SNdata[3] == EQUIPMENTCHAR2){//SN号未加密\n			#ifdef DEBUG_USART\n				printf(\"\\r\\n【MCU status】:The is SN unencrypted\\r\\n\");\n			#endif\n			APP_SN_Write();	//对SN数据进行加密\n		}\n		else if(APP_SN_StrPar.SNdata[4] == 0x00 && APP_SN_StrPar.SNdata[3] == 0x00){//无SN号\n			#ifdef DEBUG_USART\n				printf(\"\\r\\n【MCU status】:The is no SN\\r\\n\");\n			#endif\n			//while(1);//添加LED闪烁指示，和喂狗过程\n		}\n		else{//SN有误\n			#ifdef DEBUG_USART\n				printf(\"\\r\\n【MCU status】:SN error\\r\\n\");\n			#endif\n			//while(1);//添加LED闪烁指示，和喂狗过程\n		}\n	}\n}\n",
+			"file": "/G/Code/STM8L_DC_STALLLOCK_V20170327/User/app/src/APP_flash.c",
+			"file_size": 1867,
+			"file_write_time": 131393760573862527,
+			"settings":
+			{
+				"buffer_size": 1725,
+				"line_ending": "Windows",
+				"scratch": true
+			}
+		},
+		{
+			"contents": "\n#include \"main.h\"\n\nvoid APP_SN_Write(void){\n	u8 SNData[SNLENG] = {0};\n	u8 SNFlag = SNFLAGDATA;\n	u8 Code = 0;\n	u8 s_tmp[7] = {0};\n	HAL_eeprom_WriteData(SNFLAGADD, &SNFlag, 1);		//写入SN修改标志位\n	HAL_eeprom_ReadData(SNSTARTADD, SNData, SNLENG);	//读取SN原始数据\n	Code = ALG_SN_Code(SNData);							//获取SN加密字\n	ALG_SN_Encrypt(SNData, Code);						//对SN设备号加密\n	HAL_eeprom_WriteData(SNSTARTADD, SNData, SNLENG);	//写入SN加密后的数据\n	s_tmp[0] = 5;\n	s_tmp[1] = 0;\n	s_tmp[2] = SNData[0];\n	s_tmp[3] = SNData[1];\n	s_tmp[4] = SNData[2];\n	s_tmp[5] = SNData[3];\n	s_tmp[6] = SNData[4];\n	PRO_spider_BuildCMDForPar(CMD_TYPE_CONFIG,CONFIG_CMD_SETWORKPARAMETER,s_tmp,7);\n	HAL_USART_SendStringN((u8 *)APP_SPIDER.TxUsartData,APP_SPIDER.TxUsartLeng,SPIDER_USART);         \n} \n\nu8  APP_SN_Init(void){\n	u8 SNFlag = 0;\n	u8 SNData[SNLENG] = {0};\n	HAL_eeprom_ReadData(SNHAVEADD, &SNFlag, 1);\n	if(SNFlag != 0xF1){\n		return 0;\n	}\n	HAL_eeprom_ReadData(SNFLAGADD, &SNFlag, 1);	//读取SN修改标志位\n	if(SNFlag == 0){		//判断SN数据是否加密\n		APP_SN_Write();	//对SN数据进行加密\n	}\n	HAL_eeprom_ReadData(SNSTARTADD, SNData, SNLENG);	//读取SN数据\n	return 1;\n}\n",
+			"file": "APP_flash.c",
+			"file_size": 1171,
+			"file_write_time": 131461458346482303,
+			"settings":
+			{
+				"buffer_size": 1075,
+				"line_ending": "Windows",
+				"scratch": true
+			}
+		}
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 335.0,
+		"last_filter": "Package Control: ",
+		"selected_items":
+		[
+			[
+				"Package Control: ",
+				"Package Control: Discover Packages→搜索插件"
+			],
+			[
+				"Package Control: pci",
+				"Package Control: Create Package File→创建插件"
+			],
+			[
+				"pci",
+				"Package Control: Install Package→安装插件"
+			],
+			[
+				"Package Control: list",
+				"Package Control: List Packages→列出插件"
+			],
+			[
+				"in",
+				"Package Control: Install Package→安装插件"
+			],
+			[
+				"i",
+				"Package Control: Install Package→安装插件"
+			]
+		],
+		"width": 594.0
+	},
+	"console":
+	{
+		"height": 146.0,
+		"history":
+		[
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"file_history":
+	[
+		"/D/Sublime Text 3x64/Data/Packages/User/Git.sublime-settings",
+		"/D/Sublime Text 3x64/Data/Packages/Git/Git.sublime-settings",
+		"/G/Code/Project_STM8_485_Screen/Project_STM8_485_Screen/User/app/src/APP_spider.c",
+		"/G/Code/Project_STM8_485_Screen/Project_STM8_485_Screen/User/PRO_spider.h",
+		"/G/Code/Project_STM8_485_Screen/Project_STM8_485_Screen/User/app/src/APP_Camera.c",
+		"/G/Code/Project_STM8_485_Screen/Project_STM8_485_Screen/User/hal/src/HAL_key.c",
+		"/G/Code/STM8L_DC_LED_V20170324/User/app/src/APP_led.c",
+		"/G/Code/STM8L_DC_LED_V20170324/User/app/src/APP_iwdg.c",
+		"/G/Code/STM8L_DC_LED_V20170324/User/FUN_algorithm.h",
+		"/G/Code/STM8L_DC_LED_V20170324/User/main.c",
+		"/G/Code/STM8L_DC_LED_V20170324/User/app/src/APP_nor_mode.c",
+		"/G/Code/STM8L_DC_LED_V20170324/User/hal/src/HAL_led.c",
+		"/G/Code/STM8L_DC_LED_V20170324/User/stm8l15x_it.c",
+		"/G/Code/STM8L_DC_LED_V20170324/User/main.h",
+		"/G/Code/Project_STM8_485_Screen/Project_STM8_485_Screen/User/hal/inc/HAL_led.h",
+		"/G/Code/STM8L_DC_LED_V20170324/User/app/src/APP_screen.c",
+		"/G/Code/STM8L151_Camera_Project/User/app/src/APP_spider.c",
+		"/G/Code/STM8L151_Camera_Project/si/STM8_Camera.si4project/Backup/APP_spider(6918).c",
+		"/G/Code/STM8L151_Camera_Project/si/STM8_Camera.si4project/Backup/APP_spider(4560).c",
+		"/G/Code/Project_STM8_485_Screen/STM8L151_Camera_Project/User/app/inc/APP_led.h",
+		"/G/Code/Project_STM8_485_Screen/STM8L151_Camera_Project/User/hal/src/HAL_led.c",
+		"/G/Code/Project_STM8_485_Screen/STM8L151_Camera_Project/User/main.c",
+		"/G/Code/Project_STM8_485_Screen/STM8L151_Camera_Project/User/app/src/APP_led.c",
+		"/G/Code/Project_STM8_485_Screen/STM8L151_Camera_Project/User/hal/src/HAL_key.c",
+		"/G/Code/Project_STM8_485_Screen/STM8L151_Camera_Project/User/app/inc/APP_iwdg.h",
+		"/G/Code/Project_STM8_485_Screen/STM8L151_Camera_Project/User/app/src/APP_iwdg.c",
+		"/G/Code/Project_STM8_485_Screen/STM8L151_Camera_Project/User/hal/src/HAL_gpio.c",
+		"/C/Users/Administrator/Desktop/设置参数debug信息",
+		"/C/Users/Administrator/Desktop/终端开发板——板载资源备注",
+		"/C/Users/Administrator/Desktop/ST文本备注/终端开发板——板载资源备注",
+		"/G/Code/STM8L151_Camera_Project/User/app/src/APP_nor_mode.c",
+		"/G/Code/STM8L_DC_STALLLOCK_V20170327/User/app/src/APP_spider.c",
+		"/G/Code/STM8L151_Camera_Project/User/main.c",
+		"/C/Users/Administrator/Desktop/网关开发板——板载资源备注",
+		"/C/Users/Administrator/Desktop/终端模块——协议备注",
+		"/E/开发包资料/SYG007AA DEMO_160825/Spider_sec_terminal/User/APP_nor_mode.c",
+		"/G/Code/STM8L151_Camera_Project/User/FUN_algorithm.h",
+		"/G/Code/STM8L151_Camera_Project/User/PRO_spider.c",
+		"/E/开发包资料/SYG007AA DEMO_160825/Spider_sec_terminal/User/stm8l15x_it.c",
+		"/G/Code/STM8L151_Camera_Project/User/hal/src/HAL_key.c",
+		"/G/Code/STM8L151_Camera_Project/User/app/inc/APP_spider.h",
+		"/E/开发包资料/SYG007AA DEMO_160825/Spider_sec_terminal/User/APP_spider.c",
+		"/G/Code/STM8L151_Camera_Project/User/main.h",
+		"/E/开发包资料/SYG007AA DEMO_160825/Spider_sec_terminal/User/HAL_usart.h",
+		"/G/Code/STM8L151_Camera_Project - 副本/User/main.c",
+		"/E/开发包资料/SYG007AA DEMO_160825/Spider_sec_terminal/User/HAL_usart.c",
+		"/G/Code/STM8L151_Camera_Project - 副本/User/FUN_algorithm.c",
+		"/G/Code/STM8L151_Camera_Project - 副本/User/hal/src/HAL_tim.c",
+		"/G/Code/STM8L151_Camera_Project - 副本/User/hal/src/HAL_eeprom.c",
+		"/G/Code/STM8L151_Camera_Project - 副本/User/hal/inc/HAL_tim.h",
+		"/G/Code/STM8L151_Camera_Project - 副本/User/hal/src/HAL_key.c",
+		"/G/Code/STM8L151_Camera_Project - 副本/User/PRO_spider.c",
+		"/G/Code/STM8L151_Camera_Project - 副本/User/main.h",
+		"/G/Code/STM8L151_Camera_Project - 副本/readme.txt",
+		"/G/Code/STM8L151_Camera_Project - 副本/User/sysclk.c",
+		"/G/Code/STM8L151_Camera_Project - 副本/User/app/src/APP_nor_mode.c",
+		"/G/Code/STM8L151_Camera_Project - 副本/User/hal/src/HAL_led.c",
+		"/G/Code/STM8L151_Camera_Project - 副本/User/sysclk.h",
+		"/G/Code/STM8L151_Camera_Project - 副本/settings/PKTSTM8L_DC_LED.cspy.bat",
+		"/C/Users/Administrator/Desktop/ctags58.sublime-package",
+		"/D/Sublime Text 3x64/Data/Packages/Default/Default (Windows).sublime-keymap",
+		"/D/Sublime Text 3x64/Data/Packages/User/Default (Windows).sublime-keymap",
+		"/G/Code/STM8L151_Camera_Project - 副本/EW241C.tmp",
+		"/G/Code/STM8L151_Camera_Project - 副本/User/FUN_algorithm.h",
+		"/E/开发包资料/SYG007AA DEMO_160825/Spider_sec_terminal/User/main.c",
+		"/E/开发包资料/SYG007AA DEMO_160825/Spider_sec_terminal/User/APP_flash.h",
+		"/E/开发包资料/SYG007AA DEMO_160825/Spider_sec_terminal/User/APP_flash.c",
+		"/E/开发包资料/SYG007AA DEMO_160825/Spider_sec_terminal/Readme.txt",
+		"/E/STM8参考文档/STM8L15x-16x-05x-AL31-L_StdPeriph_Lib/Project/STM8L15x_StdPeriph_Examples/GPIO/GPIO_Toggle/stm8l15x_conf.h",
+		"/E/STM8参考文档/STM8L15x-16x-05x-AL31-L_StdPeriph_Lib/Project/STM8L15x_StdPeriph_Examples/GPIO/GPIO_Toggle/readme.txt",
+		"/E/STM8参考文档/STM8L15x-16x-05x-AL31-L_StdPeriph_Lib/Project/STM8L15x_StdPeriph_Examples/GPIO/GPIO_Toggle/main.c",
+		"/E/开发包资料/SYG007AA DEMO_160825/Spider_sec_terminal/User/HAL_gpio.c",
+		"/E/开发包资料/SYG007AA DEMO_160825/Spider_sec_terminal/User/HAL_spi.c",
+		"/C/Users/Administrator/Desktop/終端模塊——協議備註",
+		"/C/Users/Administrator/Desktop/终端模块备注",
+		"/E/开发包资料/SYG007AA DEMO_160825/Spider_sec_terminal/settings/sec_terminal.cspy.bat",
+		"/E/开发包资料/SYG007AA DEMO_160825/Spider_sec_terminal/Readme.txt.bak",
+		"/D/Sublime Text 3x64/sublime.py"
+	],
+	"find":
+	{
+		"height": 23.0
+	},
+	"find_in_files":
+	{
+		"height": 92.0,
+		"where_history":
+		[
+			"G:\\Code\\STM8L_DC_LED_V20170324",
+			"G:\\Code\\Project_STM8_485_Screen\\Project_STM8_485_Screen ",
+			"G:\\Code\\STM8L_DC_LED_V20170324",
+			"G:\\Code\\STM8L151_Camera_Project",
+			""
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"SCREEN_STRUCT",
+			"\n\nReceived U Package",
+			"only networking mode",
+			"Main_STRUCT",
+			"Main_StrPar",
+			"APP_LED_STRUCT",
+			"only networking mode",
+			"KEY_GPIO",
+			"InitOKFlag",
+			"StartDly",
+			"SPIDER_CMD_START",
+			"PRO_spider_BuildCMDForPar",
+			"InitDealAddr",
+			"CLK_SYSCLKDiv_1",
+			"APP_nor_mode_RealTask"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"selected": 1,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "/G/Code/STM8L_DC_STALLLOCK_V20170327/User/app/src/APP_flash.c",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1725,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"in_converting": true,
+							"origin_encoding": "GB2312",
+							"syntax": "Packages/C++/C.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "APP_flash.c",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1075,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								865,
+								865
+							]
+						],
+						"settings":
+						{
+							"in_converting": true,
+							"origin_encoding": "GB2312",
+							"syntax": "Packages/C++/C.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 23.0
+	},
+	"input":
+	{
+		"height": 0.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"pinned_build_system": "",
+	"project": "APP_flash.sublime-project",
+	"replace":
+	{
+		"height": 42.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"app_spider.c",
+				"User\\app\\src\\APP_spider.c"
+			],
+			[
+				"main.c",
+				"User\\main.c"
+			],
+			[
+				"hal_key.c",
+				"User\\hal\\src\\HAL_key.c"
+			],
+			[
+				"stm",
+				"Spider_sec_terminal\\User\\stm8l15x_it.c"
+			],
+			[
+				"haluart.h",
+				"Spider_sec_terminal\\User\\HAL_usart.h"
+			],
+			[
+				"halu",
+				"Spider_sec_terminal\\User\\HAL_usart.c"
+			]
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 500.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 380.0
+	},
+	"select_symbol":
+	{
+		"height": 375.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 378.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": true,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 244.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}
